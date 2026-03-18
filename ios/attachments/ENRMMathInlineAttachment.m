@@ -3,6 +3,7 @@
 
 #if ENRICHED_MARKDOWN_MATH
 #import <IosMath/IosMath.h>
+#import "ENRMMathSymbolRegistration.h"
 #endif
 
 #if ENRICHED_MARKDOWN_MATH
@@ -18,6 +19,8 @@
 {
   if (_displayList)
     return;
+
+  ENRMRegisterMathSymbols();
 
   MTMathUILabel *mathLabel = [[MTMathUILabel alloc] init];
   mathLabel.labelMode = kMTMathUILabelModeText;

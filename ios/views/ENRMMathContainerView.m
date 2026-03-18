@@ -3,6 +3,7 @@
 
 #if ENRICHED_MARKDOWN_MATH
 #import <IosMath/IosMath.h>
+#import "ENRMMathSymbolRegistration.h"
 #endif
 
 #if ENRICHED_MARKDOWN_MATH
@@ -19,6 +20,7 @@
 {
   self = [super initWithFrame:CGRectZero];
   if (self) {
+    ENRMRegisterMathSymbols();
     _config = config;
     _cachedLatex = @"";
 
