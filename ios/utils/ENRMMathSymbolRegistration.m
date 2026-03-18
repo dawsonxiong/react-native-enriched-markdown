@@ -3,12 +3,52 @@
 #if ENRICHED_MARKDOWN_MATH
 
 #import <IosMath/IosMath.h>
-#import <IosMath/MTMathAtomFactory.h>
-#import <IosMath/MTMathList.h>
+
+static void addSymbol(NSString *name, MTMathAtom *atom)
+{
+  static Class factory;
+  static dispatch_once_t factoryToken;
+  dispatch_once(&factoryToken, ^{
+    factory = NSClassFromString(@"MTMathAtomFactory");
+  });
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wundeclared-selector"
+  SEL addSel = @selector(addLatexSymbol:value:);
+  SEL opSel = @selector(operatorWithName:limits:);
+#pragma clang diagnostic pop
+
+  if ([factory respondsToSelector:addSel]) {
+    typedef void (*AddFn)(id, SEL, NSString *, MTMathAtom *);
+    AddFn addFn = (AddFn)[factory methodForSelector:addSel];
+    addFn(factory, addSel, name, atom);
+  }
+}
 
 static MTMathAtom *relation(NSString *nucleus)
 {
   return [MTMathAtom atomWithType:kMTMathAtomRelation value:nucleus];
+}
+
+static MTMathAtom *largeOp(NSString *nucleus)
+{
+  static Class factory;
+  static SEL opSel;
+  static dispatch_once_t token;
+  dispatch_once(&token, ^{
+    factory = NSClassFromString(@"MTMathAtomFactory");
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wundeclared-selector"
+    opSel = @selector(operatorWithName:limits:);
+#pragma clang diagnostic pop
+  });
+
+  if ([factory respondsToSelector:opSel]) {
+    typedef MTMathAtom *(*OpFn)(id, SEL, NSString *, BOOL);
+    OpFn opFn = (OpFn)[factory methodForSelector:opSel];
+    return opFn(factory, opSel, nucleus, NO);
+  }
+  return nil;
 }
 
 void ENRMRegisterMathSymbols(void)
@@ -16,35 +56,32 @@ void ENRMRegisterMathSymbols(void)
   static dispatch_once_t onceToken;
   dispatch_once(&onceToken, ^{
     // ── Large operators ───────────────────────────────────────
-    [MTMathAtomFactory addLatexSymbol:@"iint"
-                                value:[MTMathAtomFactory operatorWithName:@"\u222C" limits:NO]];
-    [MTMathAtomFactory addLatexSymbol:@"iiint"
-                                value:[MTMathAtomFactory operatorWithName:@"\u222D" limits:NO]];
+    addSymbol(@"iint", largeOp(@"\u222C"));
+    addSymbol(@"iiint", largeOp(@"\u222D"));
 
     // ── Hooked arrows ─────────────────────────────────────────
-    [MTMathAtomFactory addLatexSymbol:@"hookrightarrow" value:relation(@"\u21AA")];
-    [MTMathAtomFactory addLatexSymbol:@"hookleftarrow" value:relation(@"\u21A9")];
+    addSymbol(@"hookrightarrow", relation(@"\u21AA"));
+    addSymbol(@"hookleftarrow", relation(@"\u21A9"));
 
     // ── Harpoons ──────────────────────────────────────────────
-    [MTMathAtomFactory addLatexSymbol:@"rightharpoonup" value:relation(@"\u21C0")];
-    [MTMathAtomFactory addLatexSymbol:@"rightharpoondown" value:relation(@"\u21C1")];
-    [MTMathAtomFactory addLatexSymbol:@"leftharpoonup" value:relation(@"\u21BC")];
-    [MTMathAtomFactory addLatexSymbol:@"leftharpoondown" value:relation(@"\u21BD")];
-    [MTMathAtomFactory addLatexSymbol:@"rightleftharpoons" value:relation(@"\u21CC")];
+    addSymbol(@"rightharpoonup", relation(@"\u21C0"));
+    addSymbol(@"rightharpoondown", relation(@"\u21C1"));
+    addSymbol(@"leftharpoonup", relation(@"\u21BC"));
+    addSymbol(@"leftharpoondown", relation(@"\u21BD"));
+    addSymbol(@"rightleftharpoons", relation(@"\u21CC"));
 
     // ── Logic ─────────────────────────────────────────────────
-    [MTMathAtomFactory addLatexSymbol:@"therefore" value:relation(@"\u2234")];
-    [MTMathAtomFactory addLatexSymbol:@"because" value:relation(@"\u2235")];
+    addSymbol(@"therefore", relation(@"\u2234"));
+    addSymbol(@"because", relation(@"\u2235"));
 
     // ── Slanted inequalities ──────────────────────────────────
-    [MTMathAtomFactory addLatexSymbol:@"leqslant" value:relation(@"\u2A7D")];
-    [MTMathAtomFactory addLatexSymbol:@"geqslant" value:relation(@"\u2A7E")];
+    addSymbol(@"leqslant", relation(@"\u2A7D"));
+    addSymbol(@"geqslant", relation(@"\u2A7E"));
 
     // ── Aliases (avoid JS-side regex for these) ───────────────
-    [MTMathAtomFactory addLatexSymbol:@"implies" value:relation(@"\u27F9")];
-    [MTMathAtomFactory addLatexSymbol:@"impliedby" value:relation(@"\u27F8")];
-    [MTMathAtomFactory addLatexSymbol:@"varnothing"
-                                value:[MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u2205"]];
+    addSymbol(@"implies", relation(@"\u27F9"));
+    addSymbol(@"impliedby", relation(@"\u27F8"));
+    addSymbol(@"varnothing", [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u2205"]);
   });
 }
 
