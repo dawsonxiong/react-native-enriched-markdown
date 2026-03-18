@@ -3,6 +3,8 @@
 #if ENRICHED_MARKDOWN_MATH
 
 #import <IosMath/IosMath.h>
+#import <IosMath/MTMathAtomFactory.h>
+#import <IosMath/MTMathList.h>
 
 static MTMathAtom *relation(NSString *nucleus)
 {
